@@ -1,0 +1,9 @@
+{
+  "name": "Farcaster Christmas Portrait",
+  "description": "Generate your Christmas-themed Farcaster portrait with wallet identity.",
+  "display": {
+    "url": "https://your-domain.vercel.app/",
+    "icon": "https://your-domain.vercel.app/icon.png"
+  },
+  "permissions": ["profile", "wallet"]
+}

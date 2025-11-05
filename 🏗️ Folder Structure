@@ -1,0 +1,10 @@
+/your-app
+├── .env
+├── package.json
+├── next.config.js
+├── public/
+│   ├── icon.png
+│   └── .well-known/farcaster.json
+├── pages/
+│   ├── index.jsx
+│   └── api/generate-christmas.js
