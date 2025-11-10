@@ -97,8 +97,7 @@ document.getElementById('app').innerHTML = '<p style="color:red;text-align:cente
 
 async function init() {
 try {
-    sdk = await window.FrameSDK.init();
-          const context = sdk.context;
+    sdk = window.FrameSDK;          const context = await sdk.context;
 userData = {
 fid: context.user?.fid || 0,
 username: context.user?.username || 'Friend',
