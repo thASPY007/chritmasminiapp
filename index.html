@@ -133,40 +133,30 @@ async function generateArt() {
             method: 'POST',
             headers: {
                 'Authorization': 'Bearer r8_XvfeYySXGg9EQp0ezdN0SFcBq4FCbvi4FjmOM',
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                version: '5599ed30703defd1d160a25a63321b4dec97101d98b4674bcc56e41f62f35637',
-                input: {
-                    prompt: prompt,
-                    width: 1024,
-                    height: 1024,
-                    num_inference_steps: 4,
-                    output_format: 'png'
-                }
-            })
-        });
-        
-        const prediction = await response.json();
-        let result = prediction;
+                    // Call our serverless API endpoint
+    const response = await fetch('/api/generate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ prompt: prompt })
+    });
 
-        
-    // Check if API returned an error
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`API Error ${response.status}: ${errorText}`);
+                    const prediction = await response.json();
+    let result = prediction;
+    
+    // Poll for result  
+    while (result.status === 'starting' || result.status === 'processing') {
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      const statusResponse = await fetch(result.urls.get);
+      result = await statusResponse.json();
     }
-        while (result.status === 'starting' || result.status === 'processing') {
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            const statusResponse = await fetch(result.urls.get, {
-                headers: { 'Authorization': 'Bearer r8_XvfeYySXGg9EQp0ezdN0SFcBq4FCbvi4FjmOM' }
-            });
-            result = await statusResponse.json();
-        }
+    
+    if (result.status === 'succeeded' && result.output) {
+      const imageUrl = Array.isArray(result.output) ? result.output[0] : result.output;
+      resultDiv.innerHTML = `<img src="${imageUrl}" alt="Christmas Art" /><button onclick="window.open('${imageUrl}', '_blank')" style="margin-top:15px; background:#15803d;">⬇️ Download Your Portrait</button><button onclick="generateArt()" style="background:#b91c1c;">🎨 Generate Another</button>`;
+    }
         
-        if (result.status === 'succeeded' && result.output) {
-            const imageUrl = Array.isArray(result.output) ? result.output[0] : result.output;
-            resultDiv.innerHTML = `<img src="${imageUrl}" alt="Christmas Art" /><button onclick="window.open('${imageUrl}', '_blank')" style="margin-top:15px; background:#15803d;">⬇️ Download Your Portrait</button><button onclick="generateArt()" style="background:#b91c1c;">🎨 Generate Another</button>`;
         } else {
             throw new Error('Generation failed: ' + JSON.stringify(result));
         }
