@@ -149,7 +149,13 @@ async function generateArt() {
         
         const prediction = await response.json();
         let result = prediction;
+
         
+    // Check if API returned an error
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`API Error ${response.status}: ${errorText}`);
+    }
         while (result.status === 'starting' || result.status === 'processing') {
             await new Promise(resolve => setTimeout(resolve, 2000));
             const statusResponse = await fetch(result.urls.get, {
@@ -166,7 +172,7 @@ async function generateArt() {
         }
     } catch (error) {
         console.error('Generation error:', error);
-        resultDiv.innerHTML = '<p style="color:red;">Oops! Something went wrong. Try again.</p>';
+        resultDiv.innerHTML = `<p style="color:red;">Error: ${error.message}<br><br>Details: ${JSON.stringify(error)}</p>`;
     }
     
     btn.disabled = false;
