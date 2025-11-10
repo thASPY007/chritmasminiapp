@@ -151,11 +151,7 @@ async function generateArt() {
       const imageUrl = Array.isArray(result.output) ? result.output[0] : result.output;
       resultDiv.innerHTML = `<img src="${imageUrl}" alt="Christmas Art" /><button onclick="window.open('${imageUrl}', '_blank')" style="margin-top:15px; background:#15803d;">⬇️ Download Your Portrait</button><button onclick="generateArt()" style="background:#b91c1c;">🎨 Generate Another</button>`;
     }
-        
-        } else {
-            throw new Error('Generation failed: ' + JSON.stringify(result));
-        }
-    } catch (error) {
+        catch (error) {
         console.error('Generation error:', error);
         resultDiv.innerHTML = `<p style="color:red;">Error: ${error.message}<br><br>Details: ${JSON.stringify(error)}</p>`;
     }
