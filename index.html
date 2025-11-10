@@ -96,21 +96,28 @@ document.getElementById('app').innerHTML = '<p style="color:red;text-align:cente
 });
 
 async function init() {
-try {
+    try {
         sdk = window.FrameSDK;
+        
+        // Check if context is available
+        if (!sdk || !sdk.context) {
+            throw new Error('Not in Farcaster environment');
+        }
+        
         const context = await sdk.context;
-userData = {
-fid: context.user?.fid || 0,
-username: context.user?.username || 'Friend',
-displayName: context.user?.displayName || 'Farcaster User',
-pfpUrl: context.user?.pfpUrl || 'https://via.placeholder.com/150'
-};
-      await sdk.actions.ready();
-renderApp();
-} catch (error) {
-console.error('Init error:', error);
-document.getElementById('app').innerHTML = '<p style="color:red;text-align:center;">'+error.message+'<br><br>Open in Farcaster (Warpcast) to use this app.</p>';
-}
+        userData = {
+            fid: context.user?.fid || 0,
+            username: context.user?.username || 'Friend',
+            displayName: context.user?.displayName || 'Farcaster User',
+            pfpUrl: context.user?.pfpUrl || 'https://via.placeholder.com/150'
+        };
+        
+        await sdk.actions.ready();
+        renderApp();
+    } catch (error) {
+        console.error('Init error:', error);
+        document.getElementById('app').innerHTML = '<p style="color:red;text-align:center;">'+error.message+'<br><br>Open in Farcaster (Warpcast) to use this app.</p>';
+    }
 }
 
 function renderApp() {
