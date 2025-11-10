@@ -173,6 +173,9 @@ async function generateArt() {
     btn.textContent = '✨ Generate Christmas Magic ✨';
 }
 
+    // Make generateArt available globally for onclick handler
+    window.generateArt = generateArt;
+
 // Initialize when page loads
 init();
 </script></body>
