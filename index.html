@@ -154,7 +154,7 @@ async function generateArt() {
          else {
                resultDiv.innerHTML = `<p style="color:red;">Error: Generation failed with status ${result.status}</p>`;
               }
-
+ }
         catch (error) {
         console.error('Generation error:', error);
         resultDiv.innerHTML = `<p style="color:red;">Error: ${error.message}<br><br>Details: ${JSON.stringify(error)}</p>`;
