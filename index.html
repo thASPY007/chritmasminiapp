@@ -98,7 +98,6 @@ document.getElementById('app').innerHTML = '<p style="color:red;text-align:cente
 async function init() {
 try {
 sdk = window.FrameSDK;
-await sdk.actions.ready();
 const context = await sdk.context;
 userData = {
 fid: context.user?.fid || 0,
@@ -106,6 +105,7 @@ username: context.user?.username || 'Friend',
 displayName: context.user?.displayName || 'Farcaster User',
 pfpUrl: context.user?.pfpUrl || 'https://via.placeholder.com/150'
 };
+      await sdk.actions.ready();
 renderApp();
 } catch (error) {
 console.error('Init error:', error);
