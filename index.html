@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Christmas PFP Generator</title>
+<script src="https://unpkg.com/@farcaster/frame-sdk@0.2.0/dist/bundle.umd.js"></script>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
@@ -75,15 +76,28 @@ margin: 20px 0;
 <body>
 <div class="container">
 <h1>🎄 Christmas PFP Generator 🎅</h1>
-<div id="app"><p style="text-align:center;color:#666;">Loading...</p></div>
+<div id="app"><p style="text-align:center;color:#666;">Initializing...</p></div>
 </div>
-<script type="module">
-import sdk from 'https://esm.sh/@farcaster/frame-sdk@0.2.0';
-
+<script>
+let sdk;
 let userData = null;
+
+window.addEventListener('DOMContentLoaded', async function() {
+try {
+if (typeof window.FrameSDK === 'undefined') {
+setTimeout(init, 500);
+return;
+}
+init();
+} catch (error) {
+console.error('DOMContentLoaded error:', error);
+document.getElementById('app').innerHTML = '<p style="color:red;text-align:center;">Error: '+error.message+'</p>';
+}
+});
 
 async function init() {
 try {
+sdk = window.FrameSDK;
 await sdk.actions.ready();
 const context = await sdk.context;
 userData = {
@@ -95,7 +109,7 @@ pfpUrl: context.user?.pfpUrl || 'https://via.placeholder.com/150'
 renderApp();
 } catch (error) {
 console.error('Init error:', error);
-document.getElementById('app').innerHTML = '<p style="color:red;text-align:center;">Error: '+error.message+'<br><br>Please open this in Farcaster app (Warpcast).</p>';
+document.getElementById('app').innerHTML = '<p style="color:red;text-align:center;">'+error.message+'<br><br>Open in Farcaster (Warpcast) to use this app.</p>';
 }
 }
 
@@ -106,12 +120,12 @@ app.innerHTML = `
 <img src="${userData.pfpUrl}" alt="Profile" crossorigin="anonymous" />
 <h2>Welcome, ${userData.displayName}!</h2>
 </div>
-<button onclick="window.generateArt()" id="generateBtn">✨ Generate Christmas Magic ✨</button>
+<button onclick="generateArt()" id="generateBtn">✨ Generate Christmas Magic ✨</button>
 <div id="result" class="result"></div>
 `;
 }
 
-window.generateArt = async function() {
+async function generateArt() {
 const btn = document.getElementById('generateBtn');
 const resultDiv = document.getElementById('result');
 btn.disabled = true;
@@ -150,7 +164,7 @@ result = await statusResponse.json();
 
 if (result.status === 'succeeded' && result.output) {
 const imageUrl = Array.isArray(result.output) ? result.output[0] : result.output;
-resultDiv.innerHTML = `<img src="${imageUrl}" alt="Christmas Art" /><button onclick="window.open('${imageUrl}', '_blank')" style="margin-top:15px; background:#15803d;">⬇️ Download Your Portrait</button><button onclick="window.generateArt()" style="background:#b91c1c;">🎨 Generate Another</button>`;
+resultDiv.innerHTML = `<img src="${imageUrl}" alt="Christmas Art" /><button onclick="window.open('${imageUrl}', '_blank')" style="margin-top:15px; background:#15803d;">⬇️ Download Your Portrait</button><button onclick="generateArt()" style="background:#b91c1c;">🎨 Generate Another</button>`;
 } else {
 throw new Error('Generation failed: ' + JSON.stringify(result));
 }
@@ -161,8 +175,6 @@ resultDiv.innerHTML = '<p style="color:red;">Oops! Something went wrong. Try aga
 btn.disabled = false;
 btn.textContent = '✨ Generate Christmas Magic ✨';
 }
-
-init();
 </script>
 </body>
 </html>
