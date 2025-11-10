@@ -129,11 +129,6 @@ async function generateArt() {
         
         const prompt = `A cozy portrait of ${userData.displayName} on Christmas day, wearing a ${sweater}, smiling warmly, sitting ${setting}, ${extra}, ${lighting}, photorealistic, professional photography, holiday atmosphere`;
         
-        const response = await fetch('https://api.replicate.com/v1/predictions', {
-            method: 'POST',
-            headers: {
-                'Authorization': 'Bearer r8_XvfeYySXGg9EQp0ezdN0SFcBq4FCbvi4FjmOM',
-                    // Call our serverless API endpoint
     const response = await fetch('/api/generate', {
       method: 'POST',
       headers: {
