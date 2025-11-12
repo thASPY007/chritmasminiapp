@@ -1,9 +1,7 @@
 // Function to analyze PFP using OpenAI GPT-4 Vision
 async function analyzePFP(pfpUrl) {
   if (!pfpUrl || pfpUrl.includes('placeholder')) {
-        console.log('PFP URL received:', pfpUrl);
-          console.log('Skipping PFP analysis - placeholder or empty URL');
-return null; // Skip analysis for placeholder images
+    return null; // Skip analysis for placeholder images
   }
   
   try {
@@ -70,9 +68,11 @@ export default async function handler(req, res) {
     const enhancedPrompt = pfpDescription && pfpDescription.length > 0
       ? `A Christmas portrait in the style of ${prompt}. The person has these physical traits: ${pfpDescription}. IMPORTANT: Maintain the person's exact facial features, skin tone, hair color and style, eye color, face shape, and overall appearance as described. Transform them into a festive Christmas scene while preserving their unique identity and recognizable features.`
       : prompt;
-    const response = await fetch('https://router.huggingface.co/hf-inf
-                                     console.log('PFP Description:', pfpDescription);
-    console.log('Enhanced Prompt:', enhancedPrompt);erence/models/black-forest-labs/FLUX.1-schnell', {
+
+    console.log('PFP Description:', pfpDescription);
+    console.log('Enhanced Prompt:', enhancedPrompt);
+
+    const response = await fetch('https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-schnell', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${process.env.HUGGINGFACE_API_TOKEN}`,
