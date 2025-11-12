@@ -13,77 +13,73 @@ export default async function handler(req, res) {
 
   try {
     const { prompt, pfpUrl } = req.body;
-
     console.log('PFP URL:', pfpUrl);
     console.log('Original prompt:', prompt);
 
+    const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+    
     // If no valid PFP, just generate text-to-image
     if (!pfpUrl || pfpUrl.includes('placeholder')) {
       console.log('No valid PFP, using text-to-image only');
       
-      const response = await fetch('https://api.openai.com/v1/images/generations', {
+      const imagePrompt = `${prompt}. Christmas themed portrait, festive holiday style, cozy atmosphere, professional photography`;
+      
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${GEMINI_API_KEY}`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: 'dall-e-3',
-          prompt: `${prompt}. Christmas themed portrait, festive holiday style, cozy atmosphere, professional photography`,
-          n: 1,
-          size: '1024x1024',
-          quality: 'standard'
+          instances: [{
+            prompt: imagePrompt
+          }],
+          parameters: {
+            sampleCount: 1,
+            aspectRatio: '1:1',
+            negativePrompt: 'blurry, low quality, distorted',
+            safetyFilterLevel: 'block_some',
+            personGeneration: 'allow_all'
+          }
         })
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`OpenAI API error: ${errorText}`);
+        throw new Error(`Gemini API error: ${errorText}`);
       }
 
       const data = await response.json();
-      const imageUrl = data.data[0].url;
-
-      // Download and convert to base64
-      const imageResponse = await fetch(imageUrl);
-      const imageBlob = await imageResponse.blob();
-      const buffer = await imageBlob.arrayBuffer();
-      const base64 = Buffer.from(buffer).toString('base64');
-      const base64Image = `data:image/png;base64,${base64}`;
-
+      const base64Image = data.predictions[0].bytesBase64Encoded;
+      
       return res.status(200).json({
         status: 'succeeded',
-        output: [base64Image]
+        output: [`data:image/png;base64,${base64Image}`]
       });
     }
 
-    // WITH PFP: Use vision analysis + image generation with detailed description
-    console.log('Valid PFP detected, analyzing with GPT-4 Vision...');
+    // WITH PFP: Use Gemini Vision to analyze + generate with detailed description
+    console.log('Valid PFP detected, analyzing with Gemini Vision...');
     
-    const visionResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+    // First, analyze the PFP with Gemini Vision
+    const visionResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: [
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: 'Analyze this person in extreme detail. Describe: exact hair color, style, and length; facial structure and features; skin tone; eye color and shape; facial hair if any; approximate age; ethnicity; distinctive features; current clothing/style. Be extremely specific and detailed so an AI can recreate this exact person.'
-              },
-              {
-                type: 'image_url',
-                image_url: { url: pfpUrl }
+        contents: [{
+          parts: [
+            {
+              text: 'Analyze this person in extreme detail. Describe: exact hair color, style, and length; facial structure and features; skin tone; eye color and shape; facial hair if any; approximate age; ethnicity; distinctive features; current clothing/style. Be extremely specific and detailed so an AI can recreate this exact person.'
+            },
+            {
+              inline_data: {
+                mime_type: 'image/jpeg',
+                data: pfpUrl.includes('base64') ? pfpUrl.split(',')[1] : await fetchImageAsBase64(pfpUrl)
               }
-            ]
-          }
-        ],
-        max_tokens: 200
+            }
+          ]
+        }]
       })
     });
 
@@ -93,7 +89,7 @@ export default async function handler(req, res) {
     }
 
     const visionData = await visionResponse.json();
-    const personDescription = visionData.choices[0].message.content;
+    const personDescription = visionData.candidates[0].content.parts[0].text;
     
     console.log('Person description:', personDescription);
 
@@ -102,18 +98,22 @@ export default async function handler(req, res) {
     
     console.log('Enhanced prompt:', enhancedPrompt.substring(0, 200) + '...');
 
-    const imageGenResponse = await fetch('https://api.openai.com/v1/images/generations', {
+    const imageGenResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'dall-e-3',
-        prompt: enhancedPrompt,
-        n: 1,
-        size: '1024x1024',
-        quality: 'hd'
+        instances: [{
+          prompt: enhancedPrompt
+        }],
+        parameters: {
+          sampleCount: 1,
+          aspectRatio: '1:1',
+          negativePrompt: 'blurry, low quality, distorted, cartoon, anime',
+          safetyFilterLevel: 'block_some',
+          personGeneration: 'allow_all'
+        }
       })
     });
 
@@ -123,22 +123,29 @@ export default async function handler(req, res) {
     }
 
     const imageData = await imageGenResponse.json();
-    const imageUrl = imageData.data[0].url;
-
-    // Download and convert to base64
-    const imageResponse = await fetch(imageUrl);
-    const imageBlob = await imageResponse.blob();
-    const buffer = await imageBlob.arrayBuffer();
-    const base64 = Buffer.from(buffer).toString('base64');
-    const base64Image = `data:image/png;base64,${base64}`;
+    const base64Image = imageData.predictions[0].bytesBase64Encoded;
 
     return res.status(200).json({
       status: 'succeeded',
-      output: [base64Image]
+      output: [`data:image/png;base64,${base64Image}`]
     });
 
   } catch (error) {
     console.error('API Error:', error);
     return res.status(500).json({ error: error.message });
+  }
+}
+
+// Helper function to fetch image and convert to base64
+async function fetchImageAsBase64(url) {
+  try {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    const buffer = await blob.arrayBuffer();
+    const base64 = Buffer.from(buffer).toString('base64');
+    return base64;
+  } catch (error) {
+    console.error('Error fetching image:', error);
+    throw new Error('Failed to fetch image for analysis');
   }
 }
