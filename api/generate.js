@@ -1,3 +1,50 @@
+// Function to analyze PFP using OpenAI GPT-4 Vision
+async function analyzePFP(pfpUrl) {
+  if (!pfpUrl || pfpUrl.includes('placeholder')) {
+    return null; // Skip analysis for placeholder images
+  }
+  
+  try {
+    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: 'Describe this person\'s appearance in detail for an AI image generator. Focus on: hair color/style, skin tone, facial features, age range, gender. Be concise (max 50 words).'
+              },
+              {
+                type: 'image_url',
+                image_url: { url: pfpUrl }
+              }
+            ]
+          }
+        ],
+        max_tokens: 150
+      })
+    });
+    
+    if (!openaiResponse.ok) {
+      console.error('OpenAI API error:', await openaiResponse.text());
+      return null;
+    }
+    
+    const data = await openaiResponse.json();
+    return data.choices[0].message.content;
+  } catch (error) {
+    console.error('Error analyzing PFP:', error);
+    return null;
+  }
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -13,10 +60,14 @@ export default async function handler(req, res) {
 
   try {
     const { prompt, pfpUrl } = req.body;
+    
+    // Analyze PFP to get personalized description
+    const pfpDescription = await analyzePFP(pfpUrl);
 
         // Enhance prompt to reference the person's appearance
-    const enhancedPrompt = `A photorealistic Christmas portrait of a person resembling the photo provided, ${prompt.toLowerCase()}`;
-
+    const enhancedPrompt = pfpDescription 
+      ? `A photorealistic Christmas portrait of ${pfpDescription}, ${prompt.toLowerCase()}`
+      : `A photorealistic Christmas portrait, ${prompt.toLowerCase()}`;
     const response = await fetch('https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-schnell', {
       method: 'POST',
       headers: {
