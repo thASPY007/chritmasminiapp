@@ -54,7 +54,7 @@ CommonJS fix: use module.exports for handler (Vercel compatibility)      const h
     }
     
     const data = await openaiResponse.json();
-    return res.status(200).json({ status: 'succeeded', output: data.choices[0].message.content });
+    return data.choices[0].message.content;
   } catch (error) {
     console.error('Error analyzing PFP:', error);
     return null;
