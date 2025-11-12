@@ -21,7 +21,24 @@ async function analyzePFP(pfpUrl) {
                 type: 'text',
 text: 'Analyze this person\'s physical appearance in EXTREME detail for use in photorealistic AI image generation. Describe: hair (color, length, style, texture), facial hair, skin tone, face shape, eye color, distinctive features, approximate age, ethnicity/appearance, clothing style visible, overall aesthetic. Be very specific and detailed. Max 80 words.'              },
               {
-                type: 'image_url',
+
+                    // HuggingFace Request
+CommonJS fix: use module.exports for handler (Vercel compatibility)      const hfResponse = await fetch("https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-schnell", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.HUGGINGFACE_API_TOKEN}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ inputs: enhancedPrompt })
+      });
+      const hfText = await hfResponse.text();
+      hfResult = hfResponse.ok ? safeJsonParse(hfText) : { error: "HuggingFace API error", status: hfResponse.status, details: hfText.slice(0,120) };
+    } catch (err) {
+      hfResult = { error: "HuggingFace fetch error", details: String(err).slice(0,120) };
+    }
+    if (hfResult.error) {
+      return res.status(500).json({ error: "Generation failed", details: hfResult });
+    }
                 image_url: { url: pfpUrl }
               }
             ]
@@ -37,7 +54,7 @@ text: 'Analyze this person\'s physical appearance in EXTREME detail for use in p
     }
     
     const data = await openaiResponse.json();
-    return data.choices[0].message.content;
+    return res.status(200).json({ status: 'succeeded', output: data.choices[0].message.content });
   } catch (error) {
     console.error('Error analyzing PFP:', error);
     return null;
