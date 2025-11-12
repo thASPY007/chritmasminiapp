@@ -79,86 +79,89 @@ margin: 20px 0;
 <div id="app"><p style="text-align:center;color:#666;">Initializing...</p></div>
 </div>
 <script type="module">
-import { sdk } from 'https://esm.sh/@farcaster/miniapp-sdk';
+// Mini App - works standalone AND in Farcaster
+let userData = {
+  fid: 0,
+  username: 'Guest',
+  displayName: 'Christmas Guest', 
+  pfpUrl: 'https://via.placeholder.com/150'
+};
 
-let userData = null;
-
-async function init() {
-    try {
-            // Wrap SDK call with timeout to enable test mode
-    const sdkPromise = sdk.context;
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('SDK timeout - using test mode')), 3000)
-    );
+// Try to load Farcaster SDK (optional)
+async function loadFarcasterSDK() {
+  try {
+    const { sdk } = await import('https://esm.sh/@farcaster/miniapp-sdk');
+    const context = await Promise.race([
+      sdk.context,
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 2000))
+    ]);
     
-    const context = await Promise.race([sdkPromise, timeoutPromise]);
-        userData = {
-            fid: context.user?.fid || 0,
-            username: context.user?.username || 'Friend',
-            displayName: context.user?.displayName || 'Farcaster User',
-            pfpUrl: context.user?.pfpUrl || 'https://via.placeholder.com/150'
-        };
-        
-    // Only call ready() if we're in Farcaster environment
-    if (context.user) {
+    if (context?.user) {
+      userData = {
+        fid: context.user.fid || 0,
+        username: context.user.username || 'Guest',
+        displayName: context.user.displayName || 'Farcaster User',
+        pfpUrl: context.user.pfpUrl || 'https://via.placeholder.com/150'
+      };
       await sdk.actions.ready();
-    }        renderApp();
-    } catch (error) {
-        console.error('Init error:', error);
     }
+  } catch (error) {
+    console.log('Running in standalone mode');
+  }
 }
 
-    // Enable test mode - use fallback userData
-    console.error('Init error:', error);
-    userData = {
-      fid: 0,
-      username: 'TestUser',
-      displayName: 'Test User',
-      pfpUrl: 'https://via.placeholder.com/150'
-    };
-    renderApp();
-  }    const app = document.getElementById('app');
-    app.innerHTML = `<div class="profile"><img src="${userData.pfpUrl}" alt="Profile" crossorigin="anonymous" /><h2>Welcome, ${userData.displayName}!</h2></div><button onclick="generateArt()" id="generateBtn">✨ Generate Christmas Magic ✨</button><div id="result" class="result"></div>`;
+async function init() {
+  await loadFarcasterSDK();
+  renderApp();
+}
+
+function renderApp() {
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="profile">
+      <img src="${userData.pfpUrl}" alt="Profile" crossorigin="anonymous" />
+      <h2>Welcome, ${userData.displayName}!</h2>
+    </div>
+    <button onclick="generateArt()" id="generateBtn">✨ Generate Christmas Magic ✨</button>
+    <div id="result" class="result"></div>
+  `;
 }
 
 async function generateArt() {
-    const btn = document.getElementById('generateBtn');
-    const resultDiv = document.getElementById('result');
-    btn.disabled = true;
-    btn.textContent = '🎨 Creating your Christmas magic...';
-    resultDiv.innerHTML = '<div class="loading">Generating your unique Christmas portrait...</div>';
+  const btn = document.getElementById('generateBtn');
+  const resultDiv = document.getElementById('result');
+  btn.disabled = true;
+  btn.textContent = '🎨 Creating your Christmas magic...';
+  resultDiv.innerHTML = '<div class="loading">Generating your unique Christmas portrait...</div>';
+  
+  try {
+    const sweaters = ['festive Nordic pattern sweater', 'reindeer Christmas sweater', 'snowflake knit sweater', 'red and green holiday sweater', 'Fair Isle Christmas sweater'];
+    const settings = ['by a frosted window with snow falling outside', 'near a decorated Christmas tree', 'by a warm fireplace', 'in a cozy festive living room'];
+    const lights = ['warm golden light', 'twinkling Christmas lights', 'soft candlelight', 'natural winter window light'];
+    const extras = ['holding a mug of hot cocoa', 'surrounded by wrapped presents', 'with ornaments in the background', 'with holiday garland visible'];
     
-    try {
-        const sweaters = ['festive Nordic pattern sweater', 'reindeer Christmas sweater', 'snowflake knit sweater', 'red and green holiday sweater', 'Fair Isle Christmas sweater'];
-        const settings = ['by a frosted window with snow falling outside', 'near a decorated Christmas tree', 'by a warm fireplace', 'in a cozy festive living room'];
-        const lights = ['warm golden light', 'twinkling Christmas lights', 'soft candlelight', 'natural winter window light'];
-        const extras = ['holding a mug of hot cocoa', 'surrounded by wrapped presents', 'with ornaments in the background', 'with holiday garland visible'];
-        
-        const sweater = sweaters[Math.floor(Math.random() * sweaters.length)];
-        const setting = settings[Math.floor(Math.random() * settings.length)];
-        const lighting = lights[Math.floor(Math.random() * lights.length)];
-        const extra = extras[Math.floor(Math.random() * extras.length)];
-        
-        const prompt = `A cozy portrait of ${userData.displayName} on Christmas day, wearing a ${sweater}, smiling warmly, sitting ${setting}, ${extra}, ${lighting}, photorealistic, professional photography, holiday atmosphere`;
-        
+    const sweater = sweaters[Math.floor(Math.random() * sweaters.length)];
+    const setting = settings[Math.floor(Math.random() * settings.length)];
+    const lighting = lights[Math.floor(Math.random() * lights.length)];
+    const extra = extras[Math.floor(Math.random() * extras.length)];
+    
+    const prompt = `A cozy portrait of ${userData.displayName} on Christmas day, wearing a ${sweater}, smiling warmly, sitting ${setting}, ${extra}, ${lighting}, photorealistic, professional photography, holiday atmosphere`;
+    
     const response = await fetch('/api/generate', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ prompt: prompt })
     });
-              
-      // Check if response is OK
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-      }
-
-                    const prediction = await response.json();
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+    }
+    
+    const prediction = await response.json();
     let result = prediction;
     
-    // Poll for result  
+    // Poll for result
     while (result.status === 'starting' || result.status === 'processing') {
       await new Promise(resolve => setTimeout(resolve, 2000));
       const statusResponse = await fetch(result.urls.get);
@@ -167,24 +170,23 @@ async function generateArt() {
     
     if (result.status === 'succeeded' && result.output) {
       const imageUrl = Array.isArray(result.output) ? result.output[0] : result.output;
-      resultDiv.innerHTML = `<img src="${imageUrl}" alt="Christmas Art" /><button onclick="window.open('${imageUrl}', '_blank')" style="margin-top:15px; background:#15803d;">⬇️ Download Your Portrait</button><button onclick="generateArt()" style="background:#b91c1c;">🎨 Generate Another</button>`;
+      resultDiv.innerHTML = `
+        <img src="${imageUrl}" alt="Christmas Art" />
+        <button onclick="window.open('${imageUrl}', '_blank')" style="margin-top:15px; background:#15803d;">⬇️ Download Your Portrait</button>
+        <button onclick="generateArt()" style="background:#b91c1c;">🎨 Generate Another</button>
+      `;
+    } else {
+      resultDiv.innerHTML = `<p style="color:red;">Error: Generation failed with status ${result.status || 'unknown'}<br><br>Details: ${JSON.stringify(result)}</p>`;
     }
-         else {
-        resultDiv.innerHTML = `<p style="color:red;">Error: Generation failed with status ${result.status || 'unknown'}<br><br>Details: ${JSON.stringify(result)}</p>`;              }
- }
-        catch (error) {
-        console.error('Generation error:', error);
-        resultDiv.innerHTML = `<p style="color:red;">Error: ${error.message}<br><br>Details: ${JSON.stringify(error)}</p>`;
-    }
-    
-    btn.disabled = false;
-    btn.textContent = '✨ Generate Christmas Magic ✨';
+  } catch (error) {
+    console.error('Generation error:', error);
+    resultDiv.innerHTML = `<p style="color:red;">Error: ${error.message}</p>`;
+  }
+  
+  btn.disabled = false;
+  btn.textContent = '✨ Generate Christmas Magic ✨';
 }
 
-    // Make generateArt available globally for onclick handler
-    window.generateArt = generateArt;
-
-// Initialize when page loads
-init();
-</script></body>
+window.generateArt = generateArt;
+init();</script></body>
 </html>
