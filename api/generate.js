@@ -19,8 +19,7 @@ async function analyzePFP(pfpUrl) {
             content: [
               {
                 type: 'text',
-                text: 'Describe this person\'s appearance in detail for an AI image generator. Focus on: hair color/style, skin tone, facial features, age range, gender. Be concise (max 50 words).'
-              },
+text: 'Analyze this person\'s physical appearance in EXTREME detail for use in photorealistic AI image generation. Describe: hair (color, length, style, texture), facial hair, skin tone, face shape, eye color, distinctive features, approximate age, ethnicity/appearance, clothing style visible, overall aesthetic. Be very specific and detailed. Max 80 words.'              },
               {
                 type: 'image_url',
                 image_url: { url: pfpUrl }
@@ -65,8 +64,9 @@ export default async function handler(req, res) {
     const pfpDescription = await analyzePFP(pfpUrl);
 
         // Enhance prompt to reference the person's appearance
-    const enhancedPrompt = pfpDescription 
-      ? `A photorealistic Christmas portrait of ${pfpDescription}, ${prompt.toLowerCase()}`
+const enhancedPrompt = pfpDescription
+      ? `Photorealistic portrait of a person with: ${pfpDescription}. Settings: Christmas themed, festive holiday outfit, warm cozy atmosphere with Christmas decorations. Quality: Professional photography, high detail, authentic appearance.`
+      : `Photorealistic Christmas portrait: ${prompt.toLowerCase()}. Professional photography, festive, warm atmosphere.`;
       : `A photorealistic Christmas portrait, ${prompt.toLowerCase()}`;
     const response = await fetch('https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-schnell', {
       method: 'POST',
