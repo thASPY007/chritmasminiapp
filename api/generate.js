@@ -24,7 +24,7 @@ export default async function handler(req, res) {
     console.log('Generating with prompt:', finalPrompt);
     
     // Use FLUX.1-dev for better quality
-    const response = await fetch('https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-dev', {
+    const response = await fetch('https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-dev', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${HUGGINGFACE_API_TOKEN}`,
