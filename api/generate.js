@@ -18,13 +18,13 @@ export default async function handler(req, res) {
 
     const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
     
-    // If no valid PFP, just generate text-to-image
+    // If no valid PFP, just generate text-to-image with Imagen
     if (!pfpUrl || pfpUrl.includes('placeholder')) {
-      console.log('No valid PFP, using text-to-image only');
+      console.log('No valid PFP, using text-to-image with Imagen');
       
       const imagePrompt = `${prompt}. Christmas themed portrait, festive holiday style, cozy atmosphere, professional photography`;
       
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${GEMINI_API_KEY}`, {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${GEMINI_API_KEY}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -34,21 +34,21 @@ export default async function handler(req, res) {
             prompt: imagePrompt
           }],
           parameters: {
-            sampleCount: 1,
-            aspectRatio: '1:1',
-            negativePrompt: 'blurry, low quality, distorted',
-            safetyFilterLevel: 'block_some',
-            personGeneration: 'allow_all'
+            sampleCount: 1
           }
         })
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Gemini API error: ${errorText}`);
+        console.error('Imagen API error:', errorText);
+        throw new Error(`Imagen API error: ${errorText}`);
       }
 
       const data = await response.json();
+      console.log('Imagen response received');
+      
+      // Imagen returns base64 in predictions array
       const base64Image = data.predictions[0].bytesBase64Encoded;
       
       return res.status(200).json({
@@ -57,11 +57,14 @@ export default async function handler(req, res) {
       });
     }
 
-    // WITH PFP: Use Gemini Vision to analyze + generate with detailed description
-    console.log('Valid PFP detected, analyzing with Gemini Vision...');
+    // WITH PFP: Use Gemini 2.0 Vision to analyze + generate with Imagen
+    console.log('Valid PFP detected, analyzing with Gemini 2.0 Flash...');
     
-    // First, analyze the PFP with Gemini Vision
-    const visionResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+    // First, fetch the image and convert to base64
+    const imageBase64 = await fetchImageAsBase64(pfpUrl);
+    
+    // Analyze the PFP with Gemini 2.0 Flash (correct model name and v1 API)
+    const visionResponse = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -70,12 +73,12 @@ export default async function handler(req, res) {
         contents: [{
           parts: [
             {
-              text: 'Analyze this person in extreme detail. Describe: exact hair color, style, and length; facial structure and features; skin tone; eye color and shape; facial hair if any; approximate age; ethnicity; distinctive features; current clothing/style. Be extremely specific and detailed so an AI can recreate this exact person.'
+              text: 'Analyze this person in extreme detail for image generation. Describe: exact hair color, style, and length; facial structure and features; skin tone; eye color and shape; facial hair if any; approximate age; ethnicity; distinctive features; current expression. Be extremely specific and detailed.'
             },
             {
-              inline_data: {
-                mime_type: 'image/jpeg',
-                data: pfpUrl.includes('base64') ? pfpUrl.split(',')[1] : await fetchImageAsBase64(pfpUrl)
+              inlineData: {
+                mimeType: 'image/jpeg',
+                data: imageBase64
               }
             }
           ]
@@ -84,21 +87,22 @@ export default async function handler(req, res) {
     });
 
     if (!visionResponse.ok) {
-      console.error('Vision API error:', await visionResponse.text());
+      const errorText = await visionResponse.text();
+      console.error('Vision API error:', errorText);
       throw new Error('Failed to analyze profile picture');
     }
 
     const visionData = await visionResponse.json();
     const personDescription = visionData.candidates[0].content.parts[0].text;
     
-    console.log('Person description:', personDescription);
+    console.log('Person description:', personDescription.substring(0, 200) + '...');
 
-    // Generate image with detailed person description + Christmas theme
-    const enhancedPrompt = `Create a photorealistic Christmas portrait of this exact person: ${personDescription}. ${prompt}. CRITICAL: The person must have the EXACT physical features described above - same face, hair, skin tone, eyes, and distinctive features. Christmas setting with festive decorations, warm holiday atmosphere, professional portrait photography, high quality, detailed.`;
+    // Generate image with Imagen using the detailed description
+    const enhancedPrompt = `Portrait photo: ${personDescription}. In a Christmas setting with festive decorations, ${prompt}, warm holiday atmosphere, professional photography, high quality, photorealistic. IMPORTANT: Match the exact person described above.`;
     
-    console.log('Enhanced prompt:', enhancedPrompt.substring(0, 200) + '...');
+    console.log('Generating image with Imagen...');
 
-    const imageGenResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${GEMINI_API_KEY}`, {
+    const imageGenResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -108,17 +112,14 @@ export default async function handler(req, res) {
           prompt: enhancedPrompt
         }],
         parameters: {
-          sampleCount: 1,
-          aspectRatio: '1:1',
-          negativePrompt: 'blurry, low quality, distorted, cartoon, anime',
-          safetyFilterLevel: 'block_some',
-          personGeneration: 'allow_all'
+          sampleCount: 1
         }
       })
     });
 
     if (!imageGenResponse.ok) {
       const errorText = await imageGenResponse.text();
+      console.error('Image generation error:', errorText);
       throw new Error(`Image generation error: ${errorText}`);
     }
 
@@ -140,9 +141,11 @@ export default async function handler(req, res) {
 async function fetchImageAsBase64(url) {
   try {
     const response = await fetch(url);
-    const blob = await response.blob();
-    const buffer = await blob.arrayBuffer();
-    const base64 = Buffer.from(buffer).toString('base64');
+    if (!response.ok) {
+      throw new Error(`Failed to fetch image: ${response.statusText}`);
+    }
+    const arrayBuffer = await response.arrayBuffer();
+    const base64 = Buffer.from(arrayBuffer).toString('base64');
     return base64;
   } catch (error) {
     console.error('Error fetching image:', error);
