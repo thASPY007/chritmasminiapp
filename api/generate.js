@@ -18,14 +18,12 @@ export default async function handler(req, res) {
       method: 'POST',
       headers: {
         'Authorization': 'Bearer r8_EVqAOSi9jOFJEe7OLa8zWyNFmEq8LbZ3MOysI',      body: JSON.stringify({
-        version: '5599ed30703defd1d160a25a63321b4dec97101d98b4674bcc56e41f62f35637',
-        input: {
-          prompt: prompt,
-          width: 1024,
-          height: 1024,
-          num_inference_steps: 4,
-          output_format: 'png'
-        }
+      version: 'black-forest-labs/flux-schnell',
+      input: {
+        prompt: prompt,
+        aspect_ratio: '1:1',
+        output_format: 'png',
+        output_quality: 80
       })
     });
 
