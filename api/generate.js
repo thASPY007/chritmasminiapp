@@ -14,11 +14,9 @@ export default async function handler(req, res) {
   try {
     const { prompt } = req.body;
 
-    const response = await fetch('https://api.replicate.com/v1/predictions', {
-      method: 'POST',
+    const response = await fetch('https://api.replicate.com/v1/models/black-forest-labs/flux-schnell/predictions', {      method: 'POST',
       headers: {
         'Authorization': 'Bearer r8_EVqAOSi9jOFJEe7OLa8zWyNFmEq8LbZ3MOysI',      body: JSON.stringify({
-      version: 'black-forest-labs/flux-schnell',
       input: {
         prompt: prompt,
         aspect_ratio: '1:1',
