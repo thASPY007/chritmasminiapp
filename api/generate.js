@@ -89,7 +89,7 @@ export default async function handler(req, res) {
 
     // Step 3: Use HuggingFace Image-to-Image model
     const hfModel = imageBuffer 
-      ? 'stabilityai/stable-diffusion-xl-refiner-1.0' // Image-to-image
+      ? 'runwayml/stable-diffusion-v1-5' // Image-to-image
       : 'black-forest-labs/FLUX.1-dev'; // Text-to-image fallback
 
     console.log(`Using HuggingFace model: ${hfModel}`);
