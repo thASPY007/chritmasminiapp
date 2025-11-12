@@ -100,12 +100,19 @@ async function init() {
         renderApp();
     } catch (error) {
         console.error('Init error:', error);
-        document.getElementById('app').innerHTML = '<p style="color:red;text-align:center;">'+error.message+'<br><br>Open in Farcaster (Warpcast) to use this app.</p>';
     }
 }
 
-function renderApp() {
-    const app = document.getElementById('app');
+    // Enable test mode - use fallback userData
+    console.error('Init error:', error);
+    userData = {
+      fid: 0,
+      username: 'TestUser',
+      displayName: 'Test User',
+      pfpUrl: 'https://via.placeholder.com/150'
+    };
+    renderApp();
+  }    const app = document.getElementById('app');
     app.innerHTML = `<div class="profile"><img src="${userData.pfpUrl}" alt="Profile" crossorigin="anonymous" /><h2>Welcome, ${userData.displayName}!</h2></div><button onclick="generateArt()" id="generateBtn">✨ Generate Christmas Magic ✨</button><div id="result" class="result"></div>`;
 }
 
@@ -136,6 +143,12 @@ async function generateArt() {
       },
       body: JSON.stringify({ prompt: prompt })
     });
+              
+      // Check if response is OK
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      }
 
                     const prediction = await response.json();
     let result = prediction;
@@ -152,8 +165,7 @@ async function generateArt() {
       resultDiv.innerHTML = `<img src="${imageUrl}" alt="Christmas Art" /><button onclick="window.open('${imageUrl}', '_blank')" style="margin-top:15px; background:#15803d;">⬇️ Download Your Portrait</button><button onclick="generateArt()" style="background:#b91c1c;">🎨 Generate Another</button>`;
     }
          else {
-               resultDiv.innerHTML = `<p style="color:red;">Error: Generation failed with status ${result.status}</p>`;
-              }
+        resultDiv.innerHTML = `<p style="color:red;">Error: Generation failed with status ${result.status || 'unknown'}<br><br>Details: ${JSON.stringify(result)}</p>`;              }
  }
         catch (error) {
         console.error('Generation error:', error);
