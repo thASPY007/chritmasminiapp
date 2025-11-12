@@ -96,7 +96,11 @@ const enhancedPrompt = pfpDescription && pfpDescription.length > 0
       status: 'succeeded',
       output: [imageUrl]
     });
-  } catch (error) {
+  } catch (err
+        // Advanced PFP analysis & prompt composition
+    const visionDescription = await analyzePFPAdvanced(pfpUrl);
+    const enhancedPrompt = buildChristmasPrompt(visionDescription, prompt);
+or) {
     console.error('API Error:', error);
     return res.status(500).json({ error: error.message });
   }
