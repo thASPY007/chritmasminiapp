@@ -12,7 +12,10 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { prompt } = req.body;
+    const { prompt, pfpUrl } = req.body;
+
+        // Enhance prompt to reference the person's appearance
+    const enhancedPrompt = `A photorealistic Christmas portrait of a person resembling the photo provided, ${prompt.toLowerCase()}`;
 
     const response = await fetch('https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-schnell', {
       method: 'POST',
@@ -20,8 +23,7 @@ export default async function handler(req, res) {
         'Authorization': `Bearer ${process.env.HUGGINGFACE_API_TOKEN}`,        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        inputs: prompt,
-        parameters: {
+        inputs: enhancedPrompt,        parameters: {
           num_inference_steps: 4,
           guidance_scale: 0
         }
