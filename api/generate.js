@@ -14,24 +14,37 @@ export default async function handler(req, res) {
   try {
     const { prompt } = req.body;
 
-    const response = await fetch('https://api.replicate.com/v1/models/black-forest-labs/flux-schnell/predictions', {      method: 'POST',
+    const response = await fetch('https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell', {
+      method: 'POST',
       headers: {
-        'Authorization': 'Bearer r8_EVqAOSi9jOFJEe7OLa8zWyNFmEq8LbZ3MOysI',      body: JSON.stringify({
-      input: {
-        prompt: prompt,
-        aspect_ratio: '1:1',
-        output_format: 'png',
-        output_quality: 80
+        'Authorization': `Bearer ${process.env.HUGGINGFACE_API_TOKEN}`,        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        inputs: prompt,
+        parameters: {
+          num_inference_steps: 4,
+          guidance_scale: 0
+        }
       })
     });
 
-    const data = await response.json();
-    
     if (!response.ok) {
-      throw new Error(data.detail || `API Error: ${response.status}`);
+      const errorText = await response.text();
+      throw new Error(`HuggingFace API error: ${errorText}`);
     }
 
-    return res.status(200).json(data);
+    // HuggingFace returns the image as a blob
+    const imageBlob = await response.blob();
+    
+    // Convert blob to base64
+    const buffer = await imageBlob.arrayBuffer();
+    const base64 = Buffer.from(buffer).toString('base64');
+    const imageUrl = `data:image/png;base64,${base64}`;
+
+    return res.status(200).json({
+      status: 'succeeded',
+      output: [imageUrl]
+    });
   } catch (error) {
     console.error('API Error:', error);
     return res.status(500).json({ error: error.message });
