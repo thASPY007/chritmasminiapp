@@ -64,8 +64,9 @@ export default async function handler(req, res) {
     const pfpDescription = await analyzePFP(pfpUrl);
 
         // Enhance prompt to reference the person's appearance
-const enhancedPrompt = pfpDescription
-      ? `Photorealistic portrait of a person with: ${pfpDescription}. Settings: Christmas themed, festive holiday outfit, warm cozy atmosphere with Christmas decorations. Quality: Professional photography, high detail, authentic appearance.`
+const enhancedPrompt = pfpDescription && pfpDescription.length > 0
+      ? `Portrait of a person with ${pfpDescription}. Christmas themed with festive holiday outfit and cozy atmosphere. Photorealistic, professional quality.`
+      : `${prompt.toLowerCase()}. Christmas theme, festive, professional photography.`;      ? `Photorealistic portrait of a person with: ${pfpDescription}. Settings: Christmas themed, festive holiday outfit, warm cozy atmosphere with Christmas decorations. Quality: Professional photography, high detail, authentic appearance.`
       : `Photorealistic Christmas portrait: ${prompt.toLowerCase()}. Professional photography, festive, warm atmosphere.`;
       : `A photorealistic Christmas portrait, ${prompt.toLowerCase()}`;
     const response = await fetch('https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-schnell', {
