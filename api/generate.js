@@ -17,8 +17,7 @@ export default async function handler(req, res) {
     const response = await fetch('https://api.replicate.com/v1/predictions', {
       method: 'POST',
       headers: {
-        'Authorization': 'Bearer r8_UStQ5ODZcI2EpNX7SHFsJU19r4GpqFK0XGfUW',      },
-      body: JSON.stringify({
+        'Authorization': 'Bearer r8_EVqAOSi9jOFJEe7OLa8zWyNFmEq8LbZ3MOysI',      body: JSON.stringify({
         version: '5599ed30703defd1d160a25a63321b4dec97101d98b4674bcc56e41f62f35637',
         input: {
           prompt: prompt,
